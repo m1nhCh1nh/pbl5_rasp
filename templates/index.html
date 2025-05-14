@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Ảnh đã nhận diện</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #2d8cf0;
+            color: #fff;
+            padding: 24px 0 16px 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 32px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+        }
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 32px;
+            padding: 0 16px 32px 16px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            width: 350px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 8px 24px rgba(45,140,240,0.12);
+        }
+        .card img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+        .info {
+            padding: 18px 20px 16px 20px;
+        }
+        .info b {
+            color: #2d8cf0;
+        }
+        .waste-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        .waste-type.huu_co {
+            background: #43b244;
+        }
+        .waste-type.vo_co {
+            background: #f39c12;
+        }
+        .confidence {
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 6px;
+        }
+        @media (max-width: 800px) {
+            .gallery { flex-direction: column; align-items: center; }
+            .card { width: 95vw; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>HỆ THỐNG PHÂN LOẠI RÁC THÔNG MINH</h1>
+        <p>Xem lại các ảnh đã nhận diện và thông tin loại rác</p>
+    </header>
+    <div class="gallery">
+        {% for img in images %}
+        <div class="card">
+            <img src="/images/{{ img }}" alt="Ảnh đã nhận diện">
+            <div class="info">
+                {% set wt = waste_info[img]['waste_type'] if img in waste_info else 'unknown' %}
+                <span class="waste-type {{ wt }}">
+                    {{ 'Hữu cơ' if wt == 'huu_co' else ('Vô cơ' if wt == 'vo_co' else 'Không xác định') }}
+                </span><br>
+                <b>Nhóm:</b> {{ waste_info[img]['class_name'] if img in waste_info else 'unknown' }}<br>
+                <span class="confidence"><b>Độ tin cậy:</b> {{ '%.2f' % waste_info[img]['confidence'] if img in waste_info else '0.0' }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

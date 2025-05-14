@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch sử nhận diện rác</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 0; }
+        header { background: #2d8cf0; color: #fff; padding: 24px 0 16px 0; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 32px; }
+        h1 { margin: 0; font-size: 2.2rem; letter-spacing: 2px; }
+        .container { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { padding: 10px 8px; text-align: center; }
+        th { background: #2d8cf0; color: #fff; }
+        tr:nth-child(even) { background: #f7fafd; }
+        tr:hover { background: #e6f2ff; }
+        .waste-type { display: inline-block; padding: 4px 12px; border-radius: 16px; font-size: 1rem; font-weight: bold; color: #fff; }
+        .waste-type.huu_co { background: #43b244; }
+        .waste-type.vo_co { background: #f39c12; }
+        .waste-type.unknown { background: #888; }
+        img { max-width: 120px; border-radius: 8px; border: 1px solid #eee; }
+        @media (max-width: 700px) {
+            .container { padding: 8px; }
+            table, th, td { font-size: 0.95rem; }
+            img { max-width: 70px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>LỊCH SỬ NHẬN DIỆN RÁC</h1>
+        <p>Xem lại toàn bộ các lần nhận diện đã lưu</p>
+        <a href="/" style="color:#fff;text-decoration:underline;">&larr; Quay về trang chính</a>
+    </header>
+    <div class="container">
+        <table>
+            <tr>
+                <th>Ảnh</th>
+                <th>Loại rác</th>
+                <th>Nhóm</th>
+                <th>Độ tin cậy</th>
+                <th>Thời gian</th>
+            </tr>
+            {% for log in logs %}
+            <tr>
+                <td>
+                    {% if log[1] %}
+                        <img src="/images/{{ log[1] }}" alt="Ảnh nhận diện">
+                    {% else %}
+                        Không có ảnh
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="waste-type {{ log[2] if log[2] else 'unknown' }}">
+                        {{ 'Hữu cơ' if log[2]=='huu_co' else ('Vô cơ' if log[2]=='vo_co' else 'Không xác định') }}
+                    </span>
+                </td>
+                <td>{{ log[3] if log[3] else 'unknown' }}</td>
+                <td>{{ '%.2f' % log[4] if log[4] else '0.0' }}</td>
+                <td>{{ log[5] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html> 
