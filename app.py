@@ -48,6 +48,11 @@ def capture_and_infer_image():
             }
             # Lưu vào database
             insert_log(result_filename, waste_type, class_name, conf)
+            # Gửi lệnh về Arduino để điều khiển servo
+            if waste_type == 'vo_co':
+                ser.write(b'LEFT\n')   # Lệnh quay trái
+            elif waste_type == 'huu_co':
+                ser.write(b'RIGHT\n')  # Lệnh quay phải
             return result_filename
         cam.release()
     print("Không tìm thấy camera nào hoạt động!")

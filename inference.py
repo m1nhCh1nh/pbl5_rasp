@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import logging
-from app.core.config import settings
+from config import settings
 import os
 
 # Định nghĩa tên các lớp - chính xác như trên Raspberry Pi

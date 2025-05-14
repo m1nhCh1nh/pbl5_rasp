@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
-    MODEL_PATH: str = "app/models/best_float32.tflite"
+    MODEL_PATH: str = "/home/pi/arduino/pbl5_rasp/best_float32.tflite"
     PREDICTION_INTERVAL: float = 1.0  # Khoảng thời gian giữa các lần dự đoán (giây)
     CONF_THRESHOLD: float = 0.5  # Ngưỡng độ tin cậy cho detection - khớp với Raspberry Pi
     NMS_IOU_THRESHOLD: float = 0.5  # Ngưỡng IoU cho Non-Maximum Suppression
