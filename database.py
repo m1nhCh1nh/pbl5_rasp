@@ -6,7 +6,8 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS waste_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
+            filename_raw TEXT,
+            filename_result TEXT,
             waste_type TEXT,
             class_name TEXT,
             confidence REAL,
@@ -16,13 +17,13 @@ def init_db():
     conn.commit()
     conn.close()
 
-def insert_log(filename, waste_type, class_name, confidence):
+def insert_log(filename_raw, filename_result, waste_type, class_name, confidence):
     conn = sqlite3.connect('waste.db')
     c = conn.cursor()
     c.execute('''
-        INSERT INTO waste_log (filename, waste_type, class_name, confidence)
-        VALUES (?, ?, ?, ?)
-    ''', (filename, waste_type, class_name, confidence))
+        INSERT INTO waste_log (filename_raw, filename_result, waste_type, class_name, confidence)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (filename_raw, filename_result, waste_type, class_name, confidence))
     conn.commit()
     conn.close()
 

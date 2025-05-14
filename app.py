@@ -2,7 +2,7 @@ import serial
 import time
 import cv2
 import os
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, jsonify, request
 from inference import predict, get_waste_category, draw_boxes
 from config import settings
 from database import init_db, insert_log, get_logs
@@ -28,30 +28,36 @@ def capture_and_infer_image():
         time.sleep(0.5)
         ret, frame = cam.read()
         if ret:
-            filename = f"{int(time.time())}.jpg"
-            filepath = os.path.join(IMAGE_DIR, filename)
-            cv2.imwrite(filepath, frame)
+            filename_raw = f"{int(time.time())}_raw.jpg"
+            filepath_raw = os.path.join(IMAGE_DIR, filename_raw)
+            cv2.imwrite(filepath_raw, frame)
             cam.release()
             # Nhận diện ảnh
             boxes, class_probs = predict(frame, force=True)
             waste_type, class_name, conf = get_waste_category(boxes, class_probs)
             # Vẽ bounding box lên ảnh
             result_img = draw_boxes(frame, boxes, class_probs, current=waste_type)
-            result_filename = f"result_{filename}"
-            result_filepath = os.path.join(IMAGE_DIR, result_filename)
-            cv2.imwrite(result_filepath, result_img)
+            filename_result = f"result_{int(time.time())}.jpg"
+            filepath_result = os.path.join(IMAGE_DIR, filename_result)
+            cv2.imwrite(filepath_result, result_img)
             # Lưu thông tin loại rác
-            waste_info[result_filename] = {
+            waste_info[filename_result] = {
                 'waste_type': waste_type,
                 'class_name': class_name,
-                'confidence': conf
+                'confidence': conf,
+                'filename_raw': filename_raw
             }
             # Lưu vào database
-            insert_log(result_filename, waste_type, class_name, conf)
-            return result_filename
+            insert_log(filename_raw, filename_result, waste_type, class_name, conf)
+            # Gửi lệnh về Arduino để điều khiển servo
+            if waste_type == 'vo_co':
+                ser.write(b'LEFT\n')   # Lệnh quay trái
+            elif waste_type == 'huu_co':
+                ser.write(b'RIGHT\n')  # Lệnh quay phải
+            return filename_raw, filename_result, waste_type, class_name, conf
         cam.release()
     print("Không tìm thấy camera nào hoạt động!")
-    return None
+    return None, None, None, None, None
 
 def monitor_distance():
     last_capture_time = 0
@@ -65,8 +71,8 @@ def monitor_distance():
                     print(f"Khoảng cách: {distance} cm")
                     now = time.time()
                     if 7 <= distance <= 20 and (now - last_capture_time) > cooldown:
-                        filename = capture_and_infer_image()
-                        print(f"Đã chụp và nhận diện ảnh: {filename}")
+                        filename_raw, filename_result, waste_type, class_name, conf = capture_and_infer_image()
+                        print(f"Đã chụp và nhận diện ảnh: {filename_raw}, {filename_result}")
                         last_capture_time = time.time()
                 except ValueError:
                     pass
@@ -88,6 +94,20 @@ def images(filename):
 def history():
     logs = get_logs()
     return render_template('history.html', logs=logs)
+
+@app.route('/capture', methods=['POST'])
+def capture_api():
+    filename_raw, filename_result, waste_type, class_name, conf = capture_and_infer_image()
+    if filename_result:
+        return jsonify({
+            'filename_raw': filename_raw,
+            'filename_result': filename_result,
+            'waste_type': waste_type,
+            'class_name': class_name,
+            'confidence': conf
+        })
+    else:
+        return jsonify({'error': 'Không chụp được ảnh'}), 500
 
 if __name__ == '__main__':
     import threading

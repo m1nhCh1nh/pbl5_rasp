@@ -84,13 +84,18 @@
     <header>
         <h1>HỆ THỐNG PHÂN LOẠI RÁC THÔNG MINH</h1>
         <p>Xem lại các ảnh đã nhận diện và thông tin loại rác</p>
+        <button id="capture-btn" style="margin-top:16px;padding:10px 24px;font-size:1.1rem;background:#2d8cf0;color:#fff;border:none;border-radius:8px;cursor:pointer;">Chụp ảnh mới</button>
     </header>
-    <div class="gallery">
+    <div class="gallery" id="gallery">
         {% for img in images %}
         <div class="card">
+            {% set wt = waste_info[img]['waste_type'] if img in waste_info else 'unknown' %}
+            {% set raw_img = waste_info[img]['filename_raw'] if img in waste_info and 'filename_raw' in waste_info[img] else None %}
+            {% if raw_img %}
+            <img src="/images/{{ raw_img }}" alt="Ảnh gốc" style="border-bottom:2px solid #2d8cf0;">
+            {% endif %}
             <img src="/images/{{ img }}" alt="Ảnh đã nhận diện">
             <div class="info">
-                {% set wt = waste_info[img]['waste_type'] if img in waste_info else 'unknown' %}
                 <span class="waste-type {{ wt }}">
                     {{ 'Hữu cơ' if wt == 'huu_co' else ('Vô cơ' if wt == 'vo_co' else 'Không xác định') }}
                 </span><br>
@@ -100,5 +105,38 @@
         </div>
         {% endfor %}
     </div>
+    <script>
+    document.getElementById('capture-btn').onclick = function() {
+        this.disabled = true;
+        this.textContent = 'Đang chụp...';
+        fetch('/capture', {method: 'POST'})
+            .then(r => r.json())
+            .then(data => {
+                if(data.error) { alert(data.error); return; }
+                // Tạo card mới
+                const gallery = document.getElementById('gallery');
+                const card = document.createElement('div');
+                card.className = 'card';
+                let wt = data.waste_type || 'unknown';
+                let label = wt === 'huu_co' ? 'Hữu cơ' : (wt === 'vo_co' ? 'Vô cơ' : 'Không xác định');
+                let raw_img_html = data.filename_raw ? `<img src="/images/${data.filename_raw}" alt="Ảnh gốc" style="border-bottom:2px solid #2d8cf0;">` : '';
+                card.innerHTML = `
+                    ${raw_img_html}
+                    <img src="/images/${data.filename_result}" alt="Ảnh đã nhận diện">
+                    <div class="info">
+                        <span class="waste-type ${wt}">${label}</span><br>
+                        <b>Nhóm:</b> ${data.class_name || 'unknown'}<br>
+                        <span class="confidence"><b>Độ tin cậy:</b> ${(data.confidence||0).toFixed(2)}</span>
+                    </div>
+                `;
+                gallery.insertBefore(card, gallery.firstChild);
+            })
+            .catch(e => alert('Lỗi khi chụp ảnh!'))
+            .finally(() => {
+                this.disabled = false;
+                this.textContent = 'Chụp ảnh mới';
+            });
+    };
+    </script>
 </body>
 </html>
