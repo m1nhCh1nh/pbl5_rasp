@@ -1,0 +1,8 @@
+flask-socketio
+eventlet
+websockets
+websocket-client
+tensorflow
+opencv-python
+numpy
+serial

@@ -2,6 +2,8 @@ import serial
 import time
 import cv2
 import os
+import base64
+from websocket import create_connection
 from flask import Flask, render_template, send_from_directory
 from inference import predict, get_waste_category, draw_boxes
 from config import settings
@@ -22,12 +24,53 @@ waste_info = {}
 # Khởi tạo database
 init_db()
 
+# def send_image_ws(filename, waste_type, class_name, confidence):
+#     try:
+#         ws = create_connection("ws://192.168.110.51:8765")
+#         with open(os.path.join(IMAGE_DIR, filename), "rb") as f:
+#             img_bytes = f.read()
+#         img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+#         data = {
+#             "filename": filename,
+#             "waste_type": waste_type,
+#             "class_name": class_name,
+#             "confidence": confidence,
+#             "image": img_b64
+#         }
+#         import json
+#         ws.send(json.dumps(data))
+#         ws.close()
+#     except Exception as e:
+#         print("WebSocket send error:", e)
+
+def send_waste_detection_ws(
+    waste_type, waste_class, max_conf, processing_time, num_detections, img_b64_orig, img_b64_result
+):
+    try:
+        # ws = create_connection("ws://192.168.110.51:8765")
+        ws = create_connection("ws://192.168.110.51:8000/dashboard/ws")
+        data = {
+            "waste_type": waste_type,
+            "waste_class": waste_class,
+            "max_conf": max_conf,
+            "processing_time": processing_time,
+            "num_detections": num_detections,
+            "img_b64_orig": img_b64_orig,
+            "img_b64_result": img_b64_result
+        }
+        import json
+        ws.send(json.dumps(data))
+        ws.close()
+    except Exception as e:
+        print("WebSocket send error:", e)
+
 def capture_and_infer_image():
     for idx in range(3):
         cam = cv2.VideoCapture(idx)
         time.sleep(0.5)
         ret, frame = cam.read()
         if ret:
+            start_time = time.time()
             filename = f"{int(time.time())}.jpg"
             filepath = os.path.join(IMAGE_DIR, filename)
             cv2.imwrite(filepath, frame)
@@ -48,6 +91,18 @@ def capture_and_infer_image():
             }
             # Lưu vào database
             insert_log(result_filename, waste_type, class_name, conf)
+            # Chuẩn bị dữ liệu gửi đi
+            processing_time = time.time() - start_time
+            num_detections = len(boxes) if boxes is not None else 0
+            # Encode ảnh gốc và ảnh kết quả sang base64
+            with open(filepath, "rb") as f:
+                img_b64_orig = base64.b64encode(f.read()).decode('utf-8')
+            with open(result_filepath, "rb") as f:
+                img_b64_result = base64.b64encode(f.read()).decode('utf-8')
+            # Gửi dữ liệu qua WebSocket
+            send_waste_detection_ws(
+                waste_type, class_name, conf, processing_time, num_detections, img_b64_orig, img_b64_result
+            )
             # Gửi lệnh về Arduino để điều khiển servo
             if waste_type == 'vo_co':
                 ser.write(b'LEFT\n')   # Lệnh quay trái
